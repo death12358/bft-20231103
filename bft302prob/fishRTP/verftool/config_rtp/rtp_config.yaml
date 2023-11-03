@@ -1,0 +1,18 @@
+limit_config:
+  base_bet : 1 # 基礎投注額
+  sys_rtp_limit_enabled : true # 系統RTP上限功能 [false] [true]
+  sys_rtp_limit : 10000 # 系統RTP上限（萬分比)
+  daily_sys_loss_limit_enabled : true # 當日系統虧損上限功能 [false] [true]
+  daily_sys_loss_limit : 10000 # 當日系統虧損上限（分）
+  daily_player_profit_limit_enabled : true # 當日個人盈利上限功能 [false] [true]
+  daily_player_profit_limit : 10000 # 當日個人盈利上限（分）
+  monthly_player_profit_limit_enabled : true # 當月個人盈利上限功能 [false] [true]
+  monthly_player_profit_limit : 10000 # 當月個人盈利上限（分）
+
+sys_config: # SysConfig 系統配置
+  expected_rtp: 9700 # 系統期望RTP
+
+player_config: # PlayerConfig 個人配置
+  expected_rtp: 1 # 期望RTP（萬分比）
+  enabled: true # 個人調控功能 [false] [true]
+ 

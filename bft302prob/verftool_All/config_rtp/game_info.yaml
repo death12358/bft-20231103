@@ -1,0 +1,12 @@
+games:
+  - country_id: 1 # 幣別ID
+    platform_id: 1 # 包網ID
+    vendor_id: 15 # 代理ID
+    game_id: 1 # GameID
+    game_code: "302" # GameCode
+    room_type: 1 # 房間等級
+    game_name: "捕魚大咖" # 遊戲名稱
+    platform_name: "DSG" # 包網名稱
+    vendor_name: "bftest" # 代理名稱
+    country_name: "人民幣" # 幣別名稱
+    room_type_name: "新手房" # 房間名稱

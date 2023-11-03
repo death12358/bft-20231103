@@ -1,0 +1,18 @@
+settings: #遊戲驗證工具使用
+  game_name: fish #選擇遊戲
+  game_flow: 5 #選擇流程
+  fish_id: 13 #選擇魚種
+  multipleLimit : 238 #倍數上限
+  execution_rounds: 10 # 模擬次數
+  bet: 5000 # 砲彈金額
+
+
+  # flow_list: # 流程表
+  #   0: Normal
+  #   1: 系統贏流程-當月系統 RTP 上限
+  #   2: 系統贏流程-當日系統虧損上限
+  #   3: 系統贏流程-當日個人盈利上限
+  #   4: 系統贏流程-當月個人盈利上限
+  #   5: 隨機流程倍數上限
+
+
