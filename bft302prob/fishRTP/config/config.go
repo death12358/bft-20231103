@@ -1,5 +1,6 @@
 package config
 
+// Todo檢查Redis的部分
 import (
 	"fmt"
 	"strconv"

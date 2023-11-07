@@ -18,7 +18,6 @@ func TestGetFishPayTable(t *testing.T) {
 	js, err := json.Marshal(tables.FishPayTable)
 	if err != nil {
 		fmt.Println(err)
-
 	}
 	fmt.Printf("FishPayTable:%+v", string(js))
 }

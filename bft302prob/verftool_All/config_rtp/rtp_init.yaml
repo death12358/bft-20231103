@@ -1,5 +1,5 @@
 settings: #RTP驗證工具使用
-  execution_rounds: 5000000 # 執行局數
+  execution_rounds: 500000 # 執行局數
   bet: 5 # 投注
   # pay: 5100 # 派彩
   mode: false # 鎖定參數; [false]否 [true]是
@@ -17,21 +17,21 @@ settings: #RTP驗證工具使用
 game:
   first_game_time: 2023-05-12T10:30:26Z # 首局遊戲時間
   cycle_no: 1 # 週期編號
-  monthly_sys_bet: 10000 # 當月系統總投注
+  monthly_sys_bet: 1 # 當月系統總投注
   monthly_sys_pay: 0 # 當月系統總派彩
-  daily_sys_bet: 10000 # 當日系統總投注
+  daily_sys_bet: 1 # 當日系統總投注
   daily_sys_pay: 0 # 當日系統總派彩
 
 player_game:
   1~50:                 # 玩家編號: 用"~"隔開，也可以輸入單人玩家編號。 #驗證工具只能填1
-    monthly_player_bet: 10000 # 當月個人總投注
+    monthly_player_bet: 1 # 當月個人總投注
     monthly_player_pay: 0 # 當月個人總派彩
-    daily_player_bet: 10000 # 當日個人總投注
+    daily_player_bet: 1 # 當日個人總投注
     daily_player_pay:  0 # 當日個人總派彩
  
   51~100:                 # 多模組使用相同格式續寫。
-    monthly_player_bet: 10000 # 當月個人總投注
+    monthly_player_bet: 1 # 當月個人總投注
     monthly_player_pay: 0 # 當月個人總派彩
-    daily_player_bet: 10000 # 當日個人總投注
+    daily_player_bet: 1 # 當日個人總投注
     daily_player_pay: 0 # 當日個人總派彩
     

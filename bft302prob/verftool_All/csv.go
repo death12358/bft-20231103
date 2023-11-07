@@ -32,47 +32,9 @@ func setCSVFilePath() {
 	}
 }
 
-// func SendResultsToCSV(results []result) {
-// 	file, err := os.Create(filepath.Join(csvFilePath, "Gaming.csv"))
-// 	if err != nil {
-// 		panic(fmt.Sprintf("無法創建文件:%v", err.Error()))
-// 	}
-// 	defer file.Close()
-// 	file.WriteString("\xEF\xBB\xBF")
-// 	writer := csv.NewWriter(file)
-
-// 	headers := []string{
-// 		"執行局數", "流程", "倍數上限", "時間",
-// 		"當月系統總投注", "當月系統總派彩", "當日系統總投注", "當日系統總派彩", "當月個人總投注", "當月個人總派彩", "當日個人總投注", "當日個人總派彩",
-// 	}
-// 	writer.Write(headers)
-
-// 	for _, res := range results {
-// 		row := []string{
-// 			strconv.Itoa(res.Round),
-// 			res.Flow,
-// 			strconv.Itoa(int(res.MultipleLimit)),
-// 			res.GameStartTime,
-
-// 			strconv.FormatInt(res.SysRecord.MonthlyBet, 10),
-// 			strconv.FormatInt(res.SysRecord.MonthlyPay, 10),
-// 			strconv.FormatInt(res.SysRecord.DailyBet, 10),
-// 			strconv.FormatInt(res.SysRecord.DailyPay, 10),
-// 			strconv.FormatInt(res.PlayerRecord.MonthlyBet, 10),
-// 			strconv.FormatInt(res.PlayerRecord.MonthlyPay, 10),
-// 			strconv.FormatInt(res.PlayerRecord.DailyBet, 10),
-// 			strconv.FormatInt(res.PlayerRecord.DailyPay, 10),
-// 		}
-// 		writer.Write(row)
-// 	}
-// 	writer.Flush()
-
-// 	if err = writer.Error(); err != nil {
-// 		fmt.Println("寫入CSV文件出錯:", err)
-// 		return
-// 	}
-// }
-
+// ///////////////////////////////////////////////////////////
+// RTP相關資料
+// //////////////////////////////////////////////////////////
 func SendLimitConfigToCSV(lc config.LimitConfig) {
 	file, err := os.Create(filepath.Join(csvFilePath, "Limit.csv"))
 	if err != nil {
@@ -194,6 +156,9 @@ func SendPlayerConfigToCSV(pc config.PlayerConfig) {
 	return
 }
 
+// ///////////////////////////////////////////////////////////
+// Game相關資料
+// //////////////////////////////////////////////////////////
 func SendOverviewToCSV(overview GameConfig.Overview) {
 	file, err := os.Create(filepath.Join(csvFilePath, "Overview.csv"))
 	if err != nil {
@@ -242,21 +207,96 @@ func SendOverviewToCSV(overview GameConfig.Overview) {
 	if err := writer.Error(); err != nil {
 		return
 	}
-	fmt.Println("4")
+	fmt.Println("SendOverviewToCSV")
 	return
 }
 
-func SendRoundsDetailToCSV(roundsRecord []TotalRoundsRecordMeta) {
+// func SendRoundsDetailToCSV(roundsRecord []TotalRoundsRecordMeta) {
+// 	//一萬筆紀錄創一個檔
+// 	threshold := 10000
+// 	//計數器
+// 	count := 0
+// 	fileIndex := 1
+// 	//創第一個CSV檔
+// 	file, err := os.Create(filepath.Join(csvFilePath, "捕魚大咖1.csv"))
+// 	if err != nil {
+// 		panic(fmt.Sprintf("無法創建文件:%v", err.Error()))
+// 	}
+// 	defer file.Close()
+// 	file.WriteString("\xEF\xBB\xBF")
+// 	writer := csv.NewWriter(file)
+// 	defer writer.Flush()
 
-	//一萬筆紀錄創一個檔
-	threshold := 10000
-	//計數器
-	count := 0
-	fileIndex := 1
-	//創第一個CSV檔
-	file, err := os.Create(filepath.Join(csvFilePath, "捕魚大咖1.csv"))
+// 	headers := []string{
+// 		"執行局數", "流程", "倍數上限", "時間",
+// 		"當月系統總投注", "當月系統總派彩", "當日系統總投注", "當日系統總派彩", "當月個人總投注", "當月個人總派彩", "當日個人總投注", "當日個人總派彩",
+// 		"投注", "派彩", "免費子彈派彩", "總投注", "總派彩", "總RTP", "免費子彈數量",
+// 	}
+// 	writer.Write(headers)
+
+// 	for _, res := range roundsRecord {
+// 		if count >= threshold {
+// 			writer.Flush()
+// 			if err := writer.Error(); err != nil {
+// 				panic(err)
+// 			}
+// 			fileIndex++
+// 			file, err := createCSVFile(fileIndex)
+// 			if err != nil {
+// 				panic(err)
+// 			}
+// 			file.WriteString("\xEF\xBB\xBF")
+// 			writer = csv.NewWriter(file)
+// 			defer writer.Flush()
+
+// 			headers := []string{
+// 				"執行局數", "流程", "倍數上限", "時間",
+// 				"當月系統總投注", "當月系統總派彩", "當日系統總投注", "當日系統總派彩", "當月個人總投注", "當月個人總派彩", "當日個人總投注", "當日個人總派彩",
+// 				"投注", "派彩", "免費子彈派彩", "總投注", "總派彩", "總RTP", "免費子彈數量",
+// 			}
+// 			writer.Write(headers)
+
+// 			// 重置计数器
+// 			count = 0
+// 		}
+// 		row := []string{
+// 			strconv.Itoa(res.Round),
+// 			res.Flow,
+// 			strconv.Itoa(int(res.MultipleLimit)),
+// 			res.GameStartTime,
+
+// 			strconv.FormatInt(res.SysRecord.MonthlyBet, 10),
+// 			strconv.FormatInt(res.SysRecord.MonthlyPay, 10),
+// 			strconv.FormatInt(res.SysRecord.DailyBet, 10),
+// 			strconv.FormatInt(res.SysRecord.DailyPay, 10),
+// 			strconv.FormatInt(res.PlayerRecord.MonthlyBet, 10),
+// 			strconv.FormatInt(res.PlayerRecord.MonthlyPay, 10),
+// 			strconv.FormatInt(res.PlayerRecord.DailyBet, 10),
+// 			strconv.FormatInt(res.PlayerRecord.DailyPay, 10),
+
+// 			strconv.Itoa(int(res.Bet)),
+// 			strconv.Itoa(int(res.Pay)),
+// 			strconv.Itoa(int(res.FGPay)),
+// 			strconv.Itoa(int(res.TotalBet)),
+// 			strconv.Itoa(int(res.TotalPay)),
+// 			strconv.FormatFloat(res.RTP*100, 'f', 2, 64) + "%",
+// 			strconv.Itoa(int(res.FGTimes)),
+// 		}
+// 		writer.Write(row)
+
+// 		count++
+
+//			if err = writer.Error(); err != nil {
+//				fmt.Println("寫入CSV文件出錯:", err)
+//				return
+//			}
+//		}
+//		// fmt.Println("6")
+//	}
+func SendRoundsDetailToCSV(roundsRecord []TotalRoundsRecordMeta, fileIndex int32) {
+	file, err := createCSVFile(fileIndex)
 	if err != nil {
-		panic(fmt.Sprintf("無法創建文件:%v", err.Error()))
+		panic(fmt.Sprintf("無法創建文件%d:%v ", fileIndex, err.Error()))
 	}
 	defer file.Close()
 	file.WriteString("\xEF\xBB\xBF")
@@ -271,30 +311,6 @@ func SendRoundsDetailToCSV(roundsRecord []TotalRoundsRecordMeta) {
 	writer.Write(headers)
 
 	for _, res := range roundsRecord {
-		if count >= threshold {
-			writer.Flush()
-			if err := writer.Error(); err != nil {
-				panic(err)
-			}
-			fileIndex++
-			file, err := createCSVFile(fileIndex)
-			if err != nil {
-				panic(err)
-			}
-			file.WriteString("\xEF\xBB\xBF")
-			writer = csv.NewWriter(file)
-			defer writer.Flush()
-
-			headers := []string{
-				"執行局數", "流程", "倍數上限", "時間",
-				"當月系統總投注", "當月系統總派彩", "當日系統總投注", "當日系統總派彩", "當月個人總投注", "當月個人總派彩", "當日個人總投注", "當日個人總派彩",
-				"投注", "派彩", "免費子彈派彩", "總投注", "總派彩", "總RTP", "免費子彈數量",
-			}
-			writer.Write(headers)
-
-			// 重置计数器
-			count = 0
-		}
 		row := []string{
 			strconv.Itoa(res.Round),
 			res.Flow,
@@ -320,18 +336,16 @@ func SendRoundsDetailToCSV(roundsRecord []TotalRoundsRecordMeta) {
 		}
 		writer.Write(row)
 
-		count++
-
 		if err = writer.Error(); err != nil {
 			fmt.Println("寫入CSV文件出錯:", err)
 			return
 		}
 	}
-	fmt.Println("6")
+	// fmt.Println(fileIndex)
 }
 
 // RoundsDetail用 每一萬筆新建一個
-func createCSVFile(index int) (*os.File, error) {
+func createCSVFile(index int32) (*os.File, error) {
 	filename := fmt.Sprintf("捕魚大咖%d.csv", index)
 	file, err := os.Create(filepath.Join(csvFilePath, filename))
 	if err != nil {
@@ -398,6 +412,6 @@ func SendFishDistributionToCSV(fishDistribution GameConfig.FishMeta) {
 	if err := writer.Error(); err != nil {
 		return
 	}
-	fmt.Println("5")
+	fmt.Println("SendFishDistributionToCSV")
 
 }

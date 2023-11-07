@@ -1,6 +1,6 @@
 game_settings: #遊戲驗證工具使用
   game_name: fish #選擇遊戲
-  fish_id: 13 #選擇魚種
+  fish_id: 9 #選擇魚種
 
 
 

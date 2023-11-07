@@ -1,5 +1,5 @@
 limit_config:
-  base_bet : 1 # 基礎投注額
+  base_bet : 10 # 基礎投注額
   sys_rtp_limit_enabled : true # 系統RTP上限功能 [false] [true]
   sys_rtp_limit : 10000 # 系統RTP上限（萬分比)
   daily_sys_loss_limit_enabled : true # 當日系統虧損上限功能 [false] [true]

@@ -19,9 +19,10 @@ type settings struct {
 
 // 遊戲執行參數
 type GameSettings struct {
-	GameName string `yaml:"game_name"` //選擇遊戲
-	//	GameFlow        GameConfig.RTPFlowTypeID `yaml:"game_flow"`        //選擇流程
-	FishID int32 `yaml:"fish_id"` //選擇魚種
+	GameName string `yaml:"game_name"` //選擇遊戲	FishID int32 `yaml:"fish_id"` //選擇魚種
+	FishID   int32  `yaml:"fish_id"`   //選擇魚種
+
+	//GameFlow        GameConfig.RTPFlowTypeID `yaml:"game_flow"`        //選擇流程
 	//MultipleLimit   int64                    `yaml:"multipleLimit"`    //倍數上限
 	//ExecutionRounds int                      `yaml:"execution_rounds"` // 模擬次數
 	//Bet             int64                    `yaml:"bet"`              // 砲彈金額

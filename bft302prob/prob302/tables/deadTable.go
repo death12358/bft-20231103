@@ -7,45 +7,27 @@ import (
 	"github.com/adimax2953/bftrtpmodel/bft302prob/prob302/config"
 )
 
-var FishDeadProb = DeadProbMap_flow{}
-var DeadTableMaps = DeadTableMap{}
-
 func GetFishDeadProb() {
 	Excel_deadTable := GetExcelData("C:/tables/deadTable.xlsx")
 	DeadTableMaps = Excel_deadTable.GetDeadTableMap()
 	FishDeadProb = DeadTableMaps.GetDeadProbFromTable()
 }
 
-//	func getDeadProbMap_flow() {
-//		DeadbMap = Excel_deadTable.GetDeadTableMap()
-//		DeadMap = Test_DeadProbMap_flow
-//	}
-//
-// pin
-//
-//	var Test_DeadProbMap_flow = DeadProbMap_flow{
-//		1: &Test_DeadProbMap,
-//	}
-//
-//	var Test_DeadProbMap = DeadProbMap{
-//		4: 0.4,
-//	}
+// Definition
 type DeadProbMap_flow map[config.RTPFlowTypeID]*DeadProbMap
 type DeadProbMap map[int32]float64
-
-// Definition
-// 魚 --> DeadTable
 type DeadTableMap map[int32]*DeadTable
 
+// FlowTypeID --> DeadProbMap
+var FishDeadProb = DeadProbMap_flow{}
+
+// 魚 --> DeadTable
+var DeadTableMaps = DeadTableMap{}
+
 type DeadTable struct {
-	ExpectedRTP float64
-	ExpectedPay float64
-	//map(流程 --> 乘數調整值 )
-	AdjustMultiplier map[config.RTPFlowTypeID]float64
-	// AdjustMultiplier_SysWinMonthlyRTP          float64
-	// AdjustMultiplier_SysWinDailySysLoss        float64
-	// AdjustMultiplier_SysWinDailyPlayerProfit   float64
-	// AdjustMultiplier_SysWinMonthlyPlayerProfit float64
+	ExpectedRTP      float64
+	ExpectedPay      float64
+	AdjustMultiplier map[config.RTPFlowTypeID]float64 //map(流程 --> 乘數調整值 )
 }
 
 func (deadTableMap DeadTableMap) GetDeadProbFromTable() DeadProbMap_flow {
@@ -66,22 +48,6 @@ func (deadTableMap DeadTableMap) GetDeadProbFromTable() DeadProbMap_flow {
 	}
 	return FishDeadProb
 }
-
-// var TestDeadTable = DeadTable{
-// 	ExpectedRTP: 0.97,
-// 	ExpectedPay: 4,
-// 	//map(流程 --> 乘數調整值 )
-// 	AdjustMultiplier: map[config.RTPFlowTypeID]float64{
-// 		1: 0.3,
-// 	},
-// }
-
-// var testDeadTableMap_flow = DeadTableMap_flow{
-// 	1: &testDeadTableMap,
-// }
-// var testDeadTableMap = DeadTableMap{
-// 	4: &TestDeadTable,
-// }
 
 func (E ExcelData) GetDeadTableMap() (deadTableMap DeadTableMap) {
 	deadTableMap = make(DeadTableMap)
@@ -124,6 +90,7 @@ func (E ExcelData) GetDeadTableMap() (deadTableMap DeadTableMap) {
 					// deadTableMap[int32(idx)+1].AdjustMultiplier = make(map[string]float64)
 					deadTableMap[int32(idx)+1].AdjustMultiplier[config.SystemWinMonthlyRTP] = val / 10000
 				}
+
 			case "當日系統虧損":
 				for idx := 0; idx < len(v); idx++ {
 					val, err := strconv.ParseFloat(v[idx], 64)
@@ -136,6 +103,7 @@ func (E ExcelData) GetDeadTableMap() (deadTableMap DeadTableMap) {
 					// deadTableMap[int32(idx)+1].AdjustMultiplier = make(map[string]float64)
 					deadTableMap[int32(idx)+1].AdjustMultiplier[config.SystemWinDailySysLoss] = val / 10000
 				}
+
 			case "當日個人盈利":
 				for idx := 0; idx < len(v); idx++ {
 					val, err := strconv.ParseFloat(v[idx], 64)
@@ -148,6 +116,7 @@ func (E ExcelData) GetDeadTableMap() (deadTableMap DeadTableMap) {
 					// deadTableMap[int32(idx)+1].AdjustMultiplier = make(map[string]float64)
 					deadTableMap[int32(idx)+1].AdjustMultiplier[config.SystemWinDailyPlayerProfit] = val / 10000
 				}
+
 			case "當月個人盈利":
 				for idx := 0; idx < len(v); idx++ {
 					val, err := strconv.ParseFloat(v[idx], 64)
@@ -164,31 +133,34 @@ func (E ExcelData) GetDeadTableMap() (deadTableMap DeadTableMap) {
 		}
 
 	}
-	// fmt.Printf("End of dead table\n")
 	return
 }
 
+// 只需計算隨機流程的期望倍率
 func (deadTableMap *DeadTableMap) GetExpectPay(payTableMap PayTableMap) {
+	// 遞迴整個表依權重計算期望值
 	for fishID, payTable := range payTableMap {
 		exp := 0.0
 		totalTableWeight := 0
 		for tableIdx, tableWeight := range payTableMap[fishID].TableWeight {
 			exp_oneTable := 0.0
-			resWKey := fmt.Sprintf("%d_%d", int(fishID), tableIdx+1)
+			resTableKey := fmt.Sprintf("%d_%d", int(fishID), tableIdx+1)
 			totalTableWeight += int(tableWeight)
 			totalTableWeight_res := 0
-			for intervalIdx, intervalWeight := range payTableMap[fishID].IntervalWeight[resWKey] {
+			for intervalIdx, intervalWeight := range payTableMap[fishID].IntervalWeight[resTableKey] {
 				totalTableWeight_res += int(intervalWeight)
 				resIKey := fmt.Sprintf("%d_%d_%d", int(fishID), tableIdx+1, intervalIdx+1)
 				exp_oneTable += (float64(payTable.PayIntervals[resIKey][0]) + float64(payTable.PayIntervals[resIKey][1])) / 2 * float64(intervalWeight)
 			}
-			if totalTableWeight_res == 0 {
+			if totalTableWeight_res == 0 { //避免表格失誤導致除以0
 				exp_oneTable = 0
 			} else {
 				exp_oneTable /= float64(totalTableWeight_res)
 			}
 			exp += float64(tableWeight) * exp_oneTable
 		}
+
+		// FGPay期望值 = FixPay + 期望次數(遞迴依權重計算)*RTP
 		if fishID == 13 {
 			TotalFGWeight := 0
 			expTimes := 0.0
@@ -198,20 +170,20 @@ func (deadTableMap *DeadTableMap) GetExpectPay(payTableMap PayTableMap) {
 				TotalFGWeight += int(fgTimesWeight)
 				expFGPay += (*deadTableMap)[fishID].ExpectedRTP * expTimes
 			}
-			if TotalFGWeight == 0 {
+			if TotalFGWeight == 0 { //避免表格失誤導致除以0
 				exp = 0
 			} else {
 				exp += expFGPay / float64(TotalFGWeight)
 			}
 		}
-		if totalTableWeight == 0 {
+
+		if totalTableWeight == 0 { //避免表格失誤導致除以0
 			exp = 0
 		} else {
 			exp /= float64(totalTableWeight)
 		}
+
 		(*deadTableMap)[fishID].ExpectedPay = exp
-		fmt.Printf("fishID:%v ExpectedPay:%v\n", fishID, exp)
-
+		fmt.Printf("fishID: %d exp:%v\n", fishID, exp)
 	}
-
 }

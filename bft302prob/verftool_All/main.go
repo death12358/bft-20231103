@@ -41,21 +41,18 @@ type gameRun struct {
 	Settings     *settings
 	Recorder     *recorder.Recorder
 	GameSettings *GameSettings
-	// Recorder *recorder.GameRecorder
-	SpinIn  *spin.SpinIn
-	SpinOut *spin.SpinOut
+	SpinIn       *spin.SpinIn
+	SpinOut      *spin.SpinOut
 }
 
 func init() {
 	setCSVFilePath()
-
 }
 
 // /實際遊戲的執行狀況:多局是不是相當於"最外層"放for迴圈, 有些init是不是會重複執行?
 // recorder實際會用來記錄資料嗎? 長時間紀錄投注 派彩數據之類的 (步驟六)
 // (應該是只有運算時從db抓?)
-// 有需要模擬每月第一轉之類的? //好像算是有了(?
-// 沒有要外部調用的變數字首調成小寫
+// 沒有要外部調用的變數字首調成小寫?
 func main() {
 	defer func() {
 		fmt.Println("請按任意鍵繼續...")
@@ -69,25 +66,29 @@ func main() {
 	startTime := time.Now()
 	fmt.Println("程式運行開始", startTime.Format("2006/01/02 15:04:05.000"))
 	var err error
-	var allResults GameResult
-	var res TotalRoundsRecordMeta
 	bet := gr.Settings.Bet
 	fishID := gr.GameSettings.FishID
+	gameTime := gr.Settings.FirstGameTime
+
+	var allResults GameResult
+	var res TotalRoundsRecordMeta
+	allResults.FishDistributionRecord.FishRecordMap = make(map[int64]GameConfig.FishRecord)
 	killtime := 0
 	FishKillMap := make(map[int64]int)
 
-	// gameFlow :=
+	fileIndex := int32(1)
 
-	allResults.FishDistributionRecord.FishRecordMap = make(map[int64]GameConfig.FishRecord)
-	gameTime := gr.Settings.FirstGameTime
 	for i := 1; i <= gr.Settings.ExecutionRounds; i++ {
+
 		res.Round = i
 		res.GameStartTime = gameTime.Format("2006/01/02 15:04:05")
 
+		//RTP
 		gr.step3UpdateSystemRecord()
 		gr.step4InsertPlayer()
 		rtpRes := gr.step5GetRTPResult(strconv.Itoa(i), gameTime)
-		multipleLimit := rtpRes.MultipleLimit / bet
+		multipleLimit := rtpRes.MultipleLimit
+
 		if res.SysRecord, err = gr.Recorder.GetSysRecord(ri); err != nil {
 			panic(err.Error())
 		}
@@ -96,9 +97,10 @@ func main() {
 		}
 
 		//spin
-		gr.step3NewSpinIn(bet, fishID, 0, rtpRes.RTPFlow, multipleLimit)
-		gr.step4GenerateSpinOut()
+		gr.stepSpin3NewSpinIn(bet, fishID, 0, rtpRes.RTPFlow, multipleLimit)
+		gr.stepSpin4GenerateSpinOut()
 
+		//紀錄output用資料(RoundsDetail)
 		res.Round = i
 		res.Bet = gr.SpinIn.TotalBet
 		res.Pay = gr.SpinOut.TotalWin
@@ -112,9 +114,6 @@ func main() {
 		res.FGPay = 0
 
 		res.RTP = float64(res.TotalPay) / float64(res.TotalBet)
-
-		/////////////////////////////////////////////////////
-
 		res.Flow = GameConfig.RTPFlowChineseName[rtpRes.RTPFlow]
 		res.MultipleLimit = multipleLimit
 		if !gr.Settings.Mode {
@@ -145,7 +144,7 @@ func main() {
 			gr.step3UpdateSystemRecord()
 			gr.step4InsertPlayer()
 			rtpRes := gr.step5GetRTPResult(strconv.Itoa(i), gameTime)
-			multipleLimit := rtpRes.MultipleLimit / bet
+			multipleLimit := rtpRes.MultipleLimit
 
 			if res.SysRecord, err = gr.Recorder.GetSysRecord(ri); err != nil {
 				panic(err.Error())
@@ -155,8 +154,8 @@ func main() {
 			}
 
 			////////////////////////////////////////////////////
-			gr.step3NewSpinIn(bet, fishID, fgTimes, rtpRes.RTPFlow, multipleLimit)
-			gr.step4GenerateSpinOut()
+			gr.stepSpin3NewSpinIn(bet, fishID, fgTimes, rtpRes.RTPFlow, multipleLimit)
+			gr.stepSpin4GenerateSpinOut()
 			res.Bet = 0
 			res.Pay = 0
 			res.FGPay = gr.SpinOut.TotalWin
@@ -207,11 +206,16 @@ func main() {
 			killtime++
 			FishKillMap[(totalPay_rd)/bet+int64(bullet*1000000)]++
 		}
+		if i%10000 == 0 {
+			SendRoundsDetailToCSV(allResults.RoundsRecord, fileIndex)
+			allResults.RoundsRecord = nil
+			fileIndex++
+		}
 	}
 
 	// 紀錄OverView
 	allResults.Overview.Rounds = gr.Settings.ExecutionRounds
-	allResults.Overview.TotalRTP = allResults.RoundsRecord[gr.Settings.ExecutionRounds-1].RTP
+	allResults.Overview.TotalRTP = res.RTP
 	allResults.Overview.Killrate = float64(killtime) / float64(gr.Settings.ExecutionRounds)
 
 	// 紀錄FishDistributionRecord
@@ -232,9 +236,11 @@ func main() {
 	sc, _ := gr.Recorder.GetSysConfig(ri)
 	pc, _ := gr.Recorder.GetPlayerConfig(ri)
 
+	// 輸出不足10000筆的部分
+	SendRoundsDetailToCSV(allResults.RoundsRecord, fileIndex)
+
 	SendOverviewToCSV(allResults.Overview)
 	SendFishDistributionToCSV(allResults.FishDistributionRecord)
-	SendRoundsDetailToCSV(allResults.RoundsRecord)
 	SendLimitConfigToCSV(lc)
 	SendSysConfigToCSV(sc)
 	SendPlayerConfigToCSV(pc)
@@ -246,7 +252,7 @@ func initVERFTool() {
 	gr.setGameConfig()
 	cache.UseLocalCache()
 	gr.step1NewRecorder()
-	gr.step1InitTables()
+	gr.step1SpinInitTables()
 	gr.step2RefreshRTPConfig()
 }
 
@@ -308,7 +314,7 @@ func (gr *gameRun) step1NewRecorder() {
 }
 
 // 步驟一 取得機率表及賠付表
-func (gr *gameRun) step1InitTables() {
+func (gr *gameRun) step1SpinInitTables() {
 	tables.TableInit()
 	// if err := tables.TableInit(); err != nil {
 	// 	panic(err.Error())
@@ -352,13 +358,13 @@ func (gr *gameRun) step5GetRTPResult(roundID string, gameTime time.Time) *GameCo
 }
 
 // 步驟三 根據資料創建SpinIN
-func (gr *gameRun) step3NewSpinIn(totalBet int64, hitFish int32, fgTimes int, rtpflow GameConfig.RTPFlowTypeID, multipleLimit int64) {
+func (gr *gameRun) stepSpin3NewSpinIn(totalBet int64, hitFish int32, fgTimes int, rtpflow GameConfig.RTPFlowTypeID, multipleLimit int64) {
 	gr.SpinIn = spin.NewSpinIn(totalBet, hitFish, fgTimes)
 	gr.SpinIn.GetRTPControl(rtpflow, multipleLimit)
 }
 
 // 步驟四 Spin出結果
-func (gr *gameRun) step4GenerateSpinOut() {
+func (gr *gameRun) stepSpin4GenerateSpinOut() {
 	var err error
 	gr.SpinOut, err = gr.SpinIn.Spin()
 	if err != nil {

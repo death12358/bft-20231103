@@ -75,19 +75,19 @@ func Test_GetlastNumberFromKey() {
 func Test_GetFitTable() {
 	payTable := PayTable{
 		TableWeight: map[int32]int32{
-			1: 10,
-			2: 20,
-			3: 30,
+			0: 10,
+			1: 20,
+			2: 30,
 		},
 		IntervalWeight: map[string]map[int32]int32{
 			"1_1": {
-				1: 10,
-				2: 20,
-				3: 30,
+				0: 10,
+				1: 20,
+				2: 30,
 			},
 			"1_2": {
-				1: 40,
-				2: 50,
+				0: 40,
+				1: 50,
 			},
 		},
 		PayIntervals: map[string][2]int64{
@@ -104,17 +104,17 @@ func Test_GetFitTable() {
 
 	expectedTable := PayTable{
 		TableWeight: map[int32]int32{
-			1: 10,
-			2: 20,
+			0: 10,
+			1: 20,
 		},
 		IntervalWeight: map[string]map[int32]int32{
 			"1_1": {
-				1: 10,
-				2: 20,
-				3: 30,
+				0: 10,
+				1: 20,
+				2: 30,
 			},
 			"1_2": {
-				1: 40,
+				0: 40,
 			},
 		},
 		PayIntervals: map[string][2]int64{
@@ -127,12 +127,12 @@ func Test_GetFitTable() {
 	fitTable := payTable.GetFitTable(profit_limit)
 	// Positive test case
 	if !reflect.DeepEqual(fitTable, expectedTable) {
-		fmt.Printf("GetFitTable() failed. Expected: %v, got: %v", expectedTable, fitTable)
+		fmt.Printf("GetFitTable() failed. Expected: %v,\n got: %v", expectedTable, fitTable)
 	}
 
 	// Negative test case
 	if reflect.DeepEqual(fitTable, payTable) {
-		fmt.Printf("GetFitTable() failed. Expected: %v, got: %v", payTable, fitTable)
+		fmt.Printf("GetFitTable() failed. Expected: %v,\n got: %v", payTable, fitTable)
 	}
 }
 

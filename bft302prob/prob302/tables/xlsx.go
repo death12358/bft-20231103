@@ -6,6 +6,54 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+func TableInit() {
+	// DeadProb會用payTable中的值去算, 所以Get的順序不能變
+	GetFishPayTable()
+	GetFishDeadProb()
+}
+
+// Sheet --> 資料內容(map)
+type ExcelData map[string]DataMap
+
+// 數據名稱(first col) --> 數據內容([]string)
+type DataMap map[string][]string
+
+// TODO調整路徑
+// 好像要調整成os.Executable()?
+// fileName: "path/XXX.xlsx"
+// map: Sheet名稱 --> 檔案內容(map)
+func GetExcelData(fileName string) (excelData ExcelData) {
+	excelData = map[string]DataMap{}
+	f, err := excelize.OpenFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, sheet := range f.GetSheetList() {
+		dataMap := make(map[string][]string)
+		if _, ok := excelData[sheet]; !ok {
+			excelData[sheet] = make(map[string][]string)
+		}
+
+		rows, err := f.GetRows(sheet)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, row := range rows {
+			// 将第一column的值作为Key
+			key := row[0]
+			dataMap[key] = make([]string, 0)
+			// 将Key对应的后续列的数据存储到Map中
+			for _, value := range row[1:] {
+				dataMap[key] = append(dataMap[key], value)
+			}
+		}
+		excelData[sheet] = dataMap
+	}
+	return
+}
+
 // const (
 // 	dataKeyIndex = 0
 // 	gameDir      = "gametemplate"
@@ -65,68 +113,6 @@ import (
 // 	}
 // 	return s
 // }
-
-type Folder string
-
-func TableInit() {
-	// DeadProb會用payTable中的值去算, 所以順序不能變
-	GetFishPayTable()
-	GetFishDeadProb()
-}
-
-var DeadMap DeadProbMap_flow
-
-// Sheet --> 資料內容(map)
-type ExcelData map[string]DataMap
-
-// 數據名稱(first col) --> 數據內容([]string)
-type DataMap map[string][]string
-
-// 好像要調整成os.Executable()?
-// fileName: "path/XXX.xlsx"
-//
-// ...............................	map: Sheet名稱 --> 檔案內容(map)
-func GetExcelData(fileName string) (excelData ExcelData) {
-	excelData = map[string]DataMap{}
-	// 打开Excel文件
-	f, err := excelize.OpenFile(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// 獲取所有Sheet
-	for _, sheet := range f.GetSheetList() {
-		//創建map紀錄資料
-		dataMap := make(map[string][]string)
-
-		if _, ok := excelData[sheet]; !ok {
-			excelData[sheet] = make(map[string][]string)
-		}
-
-		rows, err := f.GetRows(sheet)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// 遍历每一行
-		for _, row := range rows {
-			// 将第一列的值作为Key
-			key := row[0]
-			dataMap[key] = make([]string, 0)
-			// 将Key对应的后续列的数据存储到Map中
-			for _, value := range row[1:] {
-				dataMap[key] = append(dataMap[key], value)
-			}
-		}
-		excelData[sheet] = dataMap
-	}
-
-	// // 打印Map中的数据
-
-	// js, _ := json.Marshal(excelData)
-
-	// fmt.Printf("PayTableMap:\n%#v", string(js))
-	// fmt.Printf("End GetExcelData(fileName string:\n")
-	return
-}
 
 // func main() {
 // 	// fmt.Printf("\nGetExcelData(\"payTable.xlsx\")~~~~~\n%#v\n~~~~~\n", GetExcelData("payTable.xlsx"))

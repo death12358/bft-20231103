@@ -8,7 +8,9 @@ import (
 
 	"github.com/adimax2953/bftrtpmodel/bft302prob/fishRTP/cache"
 	cfg "github.com/adimax2953/bftrtpmodel/bft302prob/fishRTP/config"
+	"github.com/adimax2953/bftrtpmodel/bft302prob/fishRTP/vld"
 	"github.com/adimax2953/bftrtpmodel/bft302prob/prob302/config"
+	"github.com/shopspring/decimal"
 	"gopkg.in/yaml.v3"
 
 	"github.com/adimax2953/bftrtpmodel/bft302prob/fishRTP/times"
@@ -17,17 +19,6 @@ import (
 var (
 	sRecorderSyncOnce sync.Once
 )
-
-// // GameRecorder -
-// type GameRecorder struct {
-// 	RdLock           sync.RWMutex
-// 	GameRoomTypeLock sync.RWMutex
-// 	PlayerBelongLock sync.RWMutex
-// 	Rd               map[string]*recorderData // map[countryID_platformID_vendorID_gameID_roomType]*recorderData
-// 	GameRoomType     map[string][]int32       // map[countryID_platformID_vendorID_gameID]roomType
-// 	PlayerBelong     map[int32]*cfg.GameInfo  // map[PlayerID]*cfg.GameInfo
-
-// }
 
 // Recorder -
 type Recorder struct {
@@ -201,10 +192,8 @@ func (rc *Recorder) GetRTPResult(req config.RTPResultReq) (res *config.RTPResult
 	// 是不是當月第一轉 or 是不是當日第一轉
 	if rd.isMonthlyFirstRound(preGameTime, gameTime) {
 		rd.initDataByMonthly()
-		// res.RTPProb = rd.SysConfig.BaseProb
 		tp := times.CustomTimeProvider{FixedTime: gameTime}
 		err = rc.Cache.InitDataByMonthly(key, tp)
-		// res.MultipleLimit = rd.multipleLimitCalc(playerID)
 	} else if rd.isDailyFirstRound(preGameTime, gameTime) {
 		rd.initDataByDaily()
 		tp := times.CustomTimeProvider{FixedTime: gameTime}
@@ -214,14 +203,10 @@ func (rc *Recorder) GetRTPResult(req config.RTPResultReq) (res *config.RTPResult
 	// 判斷系統贏
 	if sysWinType := rd.getSystemWin(playerID); sysWinType != 0 {
 		res.RTPFlow = sysWinType
-
-		// res.RTPProb = rd.LimitConfig.SysLimitProb
-		// res.MultipleLimit = rd.multipleLimitCalc(playerID)
 		res.MultipleLimit = -1
 		return
 	} else {
 		res.RTPFlow = config.RandomFlowProfitLimit
-		// res.RTPProb = rd.LimitConfig.PlayerLimitProb
 		res.MultipleLimit = rd.multipleLimitCalc(playerID)
 		return
 	}
@@ -466,7 +451,7 @@ func (rd *recorderData) isDailyFirstRound(preGameTime, gameTime time.Time) bool 
 func (rd *recorderData) getSystemWin(playerID int32) config.RTPFlowTypeID {
 	pr := rd.PlayerRecord[playerID]
 
-	monthlySysRTP := config.RTPCalc(rd.SysRecord.MonthlyBet, rd.SysRecord.MonthlyPay)
+	monthlySysRTP := RTPCalc(rd.SysRecord.MonthlyBet, rd.SysRecord.MonthlyPay)
 	if rd.LimitConfig.SysRTPLimitEnabled && monthlySysRTP >= rd.LimitConfig.SysRTPLimit {
 		return config.SystemWinMonthlyRTP
 	}
@@ -491,26 +476,26 @@ func (rd *recorderData) getSystemWin(playerID int32) config.RTPFlowTypeID {
 func (rd *recorderData) multipleLimitCalc(playerID int32) int64 {
 	minMultiple := int64(math.MaxInt)
 	if rd.LimitConfig.SysRTPLimitEnabled {
-		multipleLimit := config.MultipleLimitCalcByRTPLimit(rd.SysRecord.MonthlyBet, rd.SysRecord.MonthlyPay, rd.LimitConfig.Bet, rd.LimitConfig.SysRTPLimit)
+		multipleLimit := MultipleLimitCalcByRTPLimit(rd.SysRecord.MonthlyBet, rd.SysRecord.MonthlyPay, rd.LimitConfig.Bet, rd.LimitConfig.SysRTPLimit)
 		if multipleLimit < minMultiple {
 			minMultiple = multipleLimit
 		}
 	}
 	if rd.LimitConfig.DailySysLossLimitEnabled {
-		multipleLimit := config.MultipleLimitCalcByDailySys(rd.SysRecord.DailyBet, rd.SysRecord.DailyPay, rd.LimitConfig.Bet, rd.LimitConfig.DailySysLossLimit)
+		multipleLimit := MultipleLimitCalcByDailySys(rd.SysRecord.DailyBet, rd.SysRecord.DailyPay, rd.LimitConfig.Bet, rd.LimitConfig.DailySysLossLimit)
 		if multipleLimit < minMultiple {
 			minMultiple = multipleLimit
 		}
 	}
 	pr := rd.PlayerRecord[playerID]
 	if rd.LimitConfig.DailyPlayerProfitLimitEnabled {
-		multipleLimit := config.MultipleLimitCalcByDailyPlayer(pr.DailyBet, pr.DailyPay, rd.LimitConfig.Bet, rd.LimitConfig.DailyPlayerProfitLimit)
+		multipleLimit := MultipleLimitCalcByDailyPlayer(pr.DailyBet, pr.DailyPay, rd.LimitConfig.Bet, rd.LimitConfig.DailyPlayerProfitLimit)
 		if multipleLimit < minMultiple {
 			minMultiple = multipleLimit
 		}
 	}
 	if rd.LimitConfig.MonthlyPlayerProfitLimitEnabled {
-		multipleLimit := config.MultipleLimitCalcByMonthlyPlayer(pr.MonthlyBet, pr.MonthlyPay, rd.LimitConfig.Bet, rd.LimitConfig.MonthlyPlayerProfitLimit)
+		multipleLimit := MultipleLimitCalcByMonthlyPlayer(pr.MonthlyBet, pr.MonthlyPay, rd.LimitConfig.Bet, rd.LimitConfig.MonthlyPlayerProfitLimit)
 		if multipleLimit < minMultiple {
 			minMultiple = multipleLimit
 		}
@@ -524,7 +509,6 @@ func (rd *recorderData) multipleLimitCalc(playerID int32) int64 {
 	return minMultiple
 }
 
-// 確認一下是不是每個月都會執行
 // 每月初始化資訊
 func (rd *recorderData) initDataByMonthly() {
 	rd.SysRecord.InitDataByMonthly()
@@ -602,4 +586,48 @@ func (rc *Recorder) GetPlayerConfig(gameInfo cfg.GameInfo) (pc cfg.PlayerConfig,
 	}
 	pc = *rd.PlayerConfig
 	return
+}
+
+// RTPCalc 計算RTP
+func RTPCalc(bet, pay int64) int32 {
+	if !vld.BetPayVLD(bet, pay) {
+		return 10000
+	}
+	return int32(decimal.NewFromInt(pay).Div(decimal.NewFromInt(bet)).Round(4).Mul(decimal.NewFromInt(10000)).IntPart())
+}
+
+// MultipleLimitCalcByRTPLimit  RTP倍數上限計算
+func MultipleLimitCalcByRTPLimit(sysMonthlyBet, sysMonthlypay, baseBet int64, sysRTPLimit int32) int64 {
+	if !vld.BetPayVLD(sysMonthlyBet, sysMonthlypay) {
+		return 0
+	}
+	//(當月系統總投注*系統RTP上限-當月系統總派彩)/基礎投注額
+	return int64((float64(sysMonthlyBet)*(float64(sysRTPLimit)/10000) - float64(sysMonthlypay)) / float64(baseBet))
+}
+
+// MultipleLimitCalcByDailySys  當日系統倍數上限計算
+func MultipleLimitCalcByDailySys(dailySysBet, dailySysPay, baseBet, dailySysLossLimit int64) int64 {
+	if !vld.BetPayVLD(dailySysBet, dailySysPay) {
+		return 0
+	}
+	//[(當日系統總投注-當日系統總派彩)+當日系統虧損上限]/基礎投注額
+	return int64(((dailySysBet - dailySysPay) + dailySysLossLimit) / baseBet)
+}
+
+// MultipleLimitCalcByDailyPlayer  當日個人倍數上限計算
+func MultipleLimitCalcByDailyPlayer(dailyPlayerBet, dailyPlayerPay, baseBet, dailyPlayerProfitLimit int64) int64 {
+	if !vld.BetPayVLD(dailyPlayerBet, dailyPlayerPay) {
+		return 0
+	}
+	//[(當日個人總投注-當日個人總派彩)+當日個人盈利上限]/基礎投注額
+	return int64(((dailyPlayerBet - dailyPlayerPay) + dailyPlayerProfitLimit) / baseBet)
+}
+
+// MultipleLimitCalcByMonthlyPlayer  當月個人倍數上限計算
+func MultipleLimitCalcByMonthlyPlayer(mothlyPlayerBet, mothlyPlayerPay, baseBet, playerProfitLimit int64) int64 {
+	if !vld.BetPayVLD(mothlyPlayerBet, mothlyPlayerPay) {
+		return 0
+	}
+	//[(當日個人總投注-當日個人總派彩)+當日個人盈利上限]/基礎投注額
+	return int64(((mothlyPlayerBet - mothlyPlayerPay) + playerProfitLimit) / baseBet)
 }
